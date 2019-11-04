@@ -1,0 +1,177 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+
+import numpy as np
+import pandas as pd
+from IPython.core.display import HTML
+import matplotlib.pyplot as plt
+from statistics import mode 
+from mpl_toolkits import mplot3d
+
+
+df =pd.DataFrame(pd.read_csv('data.csv', delimiter = ','))
+display(HTML(df.to_html()))
+
+
+
+course = df.filter(["instr","class","nb.repeat","attendance","difficulty","Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q10","Q11","Q12",], axis=1)
+instructor = df.filter(["instr","Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","Q21","Q22","Q23","Q24","Q25","Q26","Q27","Q28"], axis=1)
+
+display(HTML(course.to_html()))
+
+display(HTML(instructor.to_html()))
+
+
+
+course.attendance.replace([0,1,2,3,4], ['0%','25%','50%','75%','100%'], inplace=True)
+course.difficulty.replace([1,2,3,4,5], [-2,-1,0,1,2], inplace=True)
+questions = ["Q13","Q14","Q15","Q16","Q17","Q18","Q19","Q20","Q21","Q22","Q23","Q24","Q25","Q26","Q27","Q28"]
+for i in questions:
+    instructor[i].replace([1,2,3,4,5], [-2,-1,0,1,2], inplace=True)
+questionsC = ["Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q10","Q11","Q12"]
+for i in questionsC:
+    course[i].replace([1,2,3,4,5], [-2,-1,0,1,2], inplace=True)
+
+
+display(HTML(course.to_html()))
+display(HTML(instructor.to_html()))
+
+
+count = course['attendance'].value_counts()
+
+
+cls = course['class'].value_counts()
+print(cls)
+
+
+a1 = course[(course['attendance'] == "25%")| (course['attendance'] == "0%")].groupby(['instr','class']).count()
+print(a1['Q1'])
+
+
+
+#how many students in a class x per instructor
+count = df.groupby('instr').count()
+numbers = count['class'].values
+plt.subplots(figsize=(18,8))
+courses = df['instr'].unique()
+plt.pie(numbers, labels=courses, startangle=90, autopct='%.1f%%')
+plt.title('Students per Instructor')
+plt.show()
+print(numbers)
+
+# Average rate from students per instructor 
+print('The average attendance /student: \n',instructor.groupby('instr').mean())
+
+average = instructor.groupby('instr').mean()
+print(average.mean(axis=1))
+
+
+count = course.groupby('class').count()
+numbers = count.Q1.values
+plt.subplots(figsize=(18,8))
+courses = course['class'].sort_values().unique()
+plt.pie(numbers, labels=courses, startangle=90, autopct='%.1f%%')
+plt.title('Classes')
+plt.show()
+
+
+
+print(course['class'].sort_values().unique())
+
+
+print(course['attendance'].unique())
+
+
+
+nrS = list(course['class'].value_counts().sort_index())
+print(nrS)
+
+
+nrSA = course[(course['attendance'] == "25%")| (course['attendance'] == "0%")].groupby(['class']).count()
+nrSAL = list(nrSA['Q1'])
+print(nrSAL)
+
+
+
+
+c = []
+for i in range(0, 13):
+    c.append(nrS[i]/2)
+print(c)
+
+
+# In[ ]:
+
+
+b = []
+a = []
+for i in range(0,13):
+   if c[i] < nrSAL[i]:
+    b.append(nrSAL[i]-c[i])
+    a.append(nrSAL[i])
+print(b,a)
+
+# class 13 has the lowest rate of attendance and it is also the second biggest class
+
+cA = course[course['class'] == 13]
+c1 = cA[(course['difficulty'] == -1)| (course['difficulty'] == -2)].groupby('difficulty').count()
+# averageC = cA.groupby('difficulty').count()
+print(c1)
+
+nrCA = cA[cA['difficulty'] < 0]
+print(len(nrCA))
+
+
+
+averageCT = course.groupby('class').mean()
+print(averageCT.mean())
+
+
+repeat = course[course['class'] == 13].groupby(['class','nb.repeat']).count()
+
+df = pd.DataFrame({'Number of repeat':['1', '2', '3'], 'Nr of students':list(repeat['Q1'])})
+ax = df.plot.bar(x='Number of repeat', y='Nr of students', rot=0)
+
+
+
+df=pd.DataFrame({'X': range(1,14), 'Y': nrSAL, 'Z': nrS})
+# plot
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter(df['X'], df['Y'], df['Z'], c='skyblue', s=60)
+ax.view_init(30, 185)
+plt.show()
+
+
+fig = plt.figure()
+plt.figure(figsize=(20,10))
+ax = plt.axes(projection="3d")
+x_pos = course['class'].unique()
+y_pos = nrSAL
+z_pos = nrS
+x_size = 2
+y_size = 20
+z_size = 100
+ax.view_init(30, 185)
+ax.bar3d(x_pos, y_pos, z_pos, x_size, y_size, z_size, color='aqua')
+
+
+questionsC = ["Q1","Q2","Q3","Q4","Q5","Q6","Q7","Q8","Q9","Q10","Q11","Q12"]
+for i in questionsC:
+    print(cA.groupby(i).count())
+
+count = course.groupby('class').count()
+numbers = list(nrSA['Q1'])
+plt.subplots(figsize=(18,8))
+courses = course['class'].sort_values().unique()
+plt.pie(numbers, labels=courses, startangle=90, autopct='%.1f%%')
+plt.title('Classes')
+plt.show()
+
+
+print(cA[(course['attendance'] == "50%")].groupby('difficulty').count())
+print(cA[(course['attendance'] == "0%") | (course['attendance'] == "25%")].groupby('difficulty').count())
+print(cA[(course['attendance'] == "75%")| (course['attendance'] == "100%")].groupby('difficulty').count())
+
+

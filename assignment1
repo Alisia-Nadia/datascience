@@ -1,0 +1,98 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+import numpy as np
+import pandas as pd
+from IPython.core.display import HTML
+import matplotlib.pyplot as plt
+from statistics import mode 
+
+
+# *Read the file with the data <br>
+# *Delete the column name Unnamed:0<br>
+# *Drop % sign in order to make calculations<br>
+# *Display the data
+
+
+df =pd.DataFrame(pd.read_csv('stud-stat-anonymous.csv', delimiter = ','))
+df =  df.drop('Unnamed: 0', axis=1)
+
+df['Samlet fravær'] = df['Samlet fravær'].str[:-1].astype(float)
+df['Fravær'] = df['Fravær'].str[:-1].astype(float)
+df['Fravær.1'] = df['Fravær.1'].str[:-1].astype(float)
+df['Fravær.2'] = df['Fravær.2'].str[:-1].astype(float)
+df['Fravær.3'] = df['Fravær.3'].str[:-1].astype(float)
+
+display(HTML(df.to_html()))
+
+
+# *Reorganize the data
+
+df1 = df.melt( id_vars=['Id','Samlet fravær','Klasse'], 
+              value_vars=['Fag','Fag.1','Fag.2','Fag.3'],
+              var_name='frag',value_name='Fag')
+df2 = df.melt(id_vars=['Id','Samlet fravær','Klasse'], 
+              value_vars=['Fravær','Fravær.1','Fravær.2','Fravær.3'], 
+              var_name='fravær', value_name='Fravær')
+
+
+df1 = df1.set_index(['Id','Samlet fravær','Klasse', df1.groupby(['Id','Samlet fravær','Klasse']).cumcount()])
+df2 = df2.set_index(['Id','Samlet fravær','Klasse', df2.groupby(['Id','Samlet fravær','Klasse']).cumcount()])
+
+df1 =  df1.drop('frag',axis=1)
+df2 =  df2.drop('fravær', axis=1)
+df3 = (pd.concat([df1, df2],axis=1)
+         .sort_index(level=3)
+         .reset_index(level=3, drop=True)
+         .reset_index())
+
+
+dfm = df3.dropna(how='any',axis=0) 
+display(HTML(dfm.to_html()))
+
+count = dfm.groupby(['Id','Klasse']).count()
+
+count = count.groupby('Klasse').count()
+numbers = count.Fag.values
+print(numbers)
+
+plt.subplots(figsize=(18,8))
+objects =dfm['Klasse'].unique()
+y_pos = np.arange(len(numbers))
+performance = numbers
+
+plt.bar(y_pos, performance, align='center', alpha=0.5)
+plt.xticks(y_pos, objects)
+plt.xticks(rotation='vertical')
+
+plt.ylabel('Number of students')
+plt.title('Courses')
+
+plt.show()
+
+count = dfm.groupby('Fag').count()
+numbers = count.Id.values
+plt.subplots(figsize=(18,8))
+courses = dfm['Fag'].unique()
+plt.pie(numbers, labels=courses, startangle=90, autopct='%.1f%%')
+plt.title('Students & Subjects')
+plt.show()
+
+# *Statistics
+# *Value that appears most frequently
+print('The most frequent class is:', mode(dfm['Klasse']))
+print('The most frequent subject is:', mode(dfm['Fag']))
+
+# *The mean - show the average of date
+
+print('The average attendance of Samlet fravær:',dfm['Samlet fravær'].mean())
+print('The average attendance /student: \n',dfm.groupby('Id').mean())
+
+
+#  *More statistics
+# The standard deviation
+dfm.std()
+#range
+dfm['Samlet fravær'].max()- dfm['Samlet fravær'].min()
+dfm.boxplot(column='Samlet fravær', return_type='axes')
+
